@@ -1,0 +1,150 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<title>editor UI</title>
+<script
+	src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<meta charset="utf-8" />
+<style type="text/css" media="screen">
+    #editorDD { 
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+    }
+</style>
+<style type="text/css" media="screen">
+    .ace_editor {
+        position: relative !important;
+        border: 1px solid lightgray;
+        margin: auto;
+        height: 200px;
+        width: 80%;
+    }
+
+    .ace_editor.fullScreen {
+        height: auto;
+        width: auto;
+        border: 0;
+        margin: 0;
+        position: fixed !important;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 10;
+    }
+
+    body.fullScreen {
+        overflow: hidden;
+        /*transform breaks position fixed*/
+        transform: none!important;
+    }
+
+    .scrollmargin {
+        height: 500px;
+        text-align: center;
+    }
+
+    .large-button {
+        color: lightblue;
+        cursor: pointer;
+        font: 30px arial;
+        padding: 20px;
+        text-align: center;
+        border: medium solid transparent;
+        display: inline-block;
+    }
+    .large-button:hover {
+        border: medium solid lightgray;
+        border-radius: 10px 10px 10px 10px;
+        box-shadow: 0 0 12px 0 lightblue;
+    }
+    body {
+        transform: translateZ(0);
+    }
+  </style>
+<script src="https://pagecdn.io/lib/ace/1.4.6/ace.js" integrity="sha256-CVkji/u32aj2TeC+D13f7scFSIfphw2pmu4LaKWMSY8=" crossorigin="anonymous"></script>
+</head>
+
+<body>
+	password:
+	<input name="password" id="password" type="password" />
+	<br /> code:
+	<br/>
+	<br />
+	<!-- 
+	<textarea id="code" style="width:100%;height:auto;resize:both;">&lt;?php
+//declare(strict_types=1);
+//header(&quot;Content-Type: text/plain;charset=utf-8&quot;);
+//header(&quot;Content-Type: text/html;charset=utf-8&quot;);
+
+var_dump("hi");
+</textarea>
+ -->
+
+<div id="editor">&lt;?php
+//declare(strict_types=1);
+//header(&quot;Content-Type: text/plain;charset=utf-8&quot;);
+//header(&quot;Content-Type: text/html;charset=utf-8&quot;);
+var_dump("hi");
+</div>
+<script>
+    window.editor = ace.edit("editor");
+    window.editor.setTheme("ace/theme/monokai");
+    window.editor.session.setMode("ace/mode/php");
+    window.editor.renderer.setScrollMargin(10, 10);
+    window.editor.setOptions({
+        // "scrollPastEnd": 0.8,
+        autoScrollEditorIntoView: true
+    });
+    </script>
+
+	<br />
+	<input type="button" value="refresh" id="refresh" /> auto-refresh:
+	<input type="checkbox" id="autorefresh" />
+	<br /> response:
+	<br />
+	<span id="unexpected_response"></span>
+	<iframe id="code_iframe" style="width:100%;height:100%;"></iframe>
+	<script>
+		function refresh_iframe() {
+			let code = window.editor.getValue();
+			let xhr = new XMLHttpRequest();
+			xhr.open("POST", "evals_api.php?disable_redirect=1");
+			let fd = new FormData();
+			fd.append("password", $("#password").val());
+			fd.append("code", code);
+			xhr.addEventListener("readystatechange", function(ev) {
+				if (ev.target.readyState < 4) {
+					return;
+				}
+				if(xhr.status===204){
+					// empty code?
+					return;
+				}
+				if(xhr.status!==200){
+					$("#unexpected_response")[0].textContent="Unexpected response: "+xhr.responseText;
+					$("#unexpected_response")[0].innerHTML+="<br/>";
+					return;
+				}
+				$("#unexpected_response")[0].textContent=ev.target.responseText;
+				console.log(xhr);
+				let iframe = $("#code_iframe");
+				if (iframe.attr("src") == ev.target.responseText) {
+					iframe[0].contentWindow.location.reload();
+				} else {
+					iframe.attr("src", ev.target.responseText);
+				}
+			});
+			xhr.send(fd);
+		}
+		window.editor.session.on("change",function(delta_airlines){
+			if(!$("#autorefresh")[0].checked){return;}
+			refresh_iframe();
+		});
+		$("#refresh").on("click",refresh_iframe);
+	</script>
+</body>
+</html>

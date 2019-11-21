@@ -1,0 +1,5 @@
+<?php
+// md5 shuld be ok because we're just using it as a compressor...
+$conf = [
+    'password' => hash('md5', 'put your password here', true)
+];
